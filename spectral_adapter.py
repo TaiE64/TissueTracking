@@ -93,13 +93,81 @@ class FeatureLevelSpectralAdapter(nn.Module):
         nn.init.zeros_(self.proj.weight)
         nn.init.zeros_(self.proj.bias)
 
-    def forward(self, ms):
+    def forward(self, ms, f_rgb=None):
+        # f_rgb is accepted for API uniformity with cross-attention variant; ignored here.
         # 1. spatial downsample (cheap, depthwise)
         x = self.spatial_down(ms)  # (B, n_bands, H/stride, W/stride)
         # 2. spectral self-attention at low res (cheap & backprop-friendly)
         f = self.trunk(x)  # (B, trunk_dim, H/stride, W/stride)
         # 3. project to feat_dim
         return self.proj(f)
+
+
+class CrossAttentionSpectralAdapter(nn.Module):
+    """Cross-attention variant: RGB feature queries the 31 spectral bands.
+
+    At each spatial position p (on the /stride grid):
+      Q_p = q_proj(F_rgb[p])                    # 1 query token of dim D
+      K, V = gse(MS_p) = embed each of 31 bands  # 31 tokens of dim D
+      attended_p = MultiHeadAttn(Q_p, K, V)      # task-aware spectral lookup
+      ΔF_p = out_proj(attended_p)                # zero-init -> 0 at start
+    """
+    def __init__(self, n_bands=31, dim=64, n_heads=4, feat_dim=256, stride=8, group_size=3):
+        super().__init__()
+        self.n_bands = n_bands
+        self.dim = dim
+        self.feat_dim = feat_dim
+
+        # spatial downsample (depthwise, keeps bands independent)
+        log2_stride = stride.bit_length() - 1
+        dws = []
+        cur_c = n_bands
+        for _ in range(log2_stride):
+            dws += [
+                nn.Conv2d(cur_c, cur_c, kernel_size=3, stride=2, padding=1, groups=cur_c, bias=False),
+                nn.GroupNorm(1, cur_c),
+                nn.GELU(),
+            ]
+        self.spatial_down = nn.Sequential(*dws)
+
+        # K/V: GSE-like 1D conv along band axis to embed each band as a token
+        self.gse = nn.Conv1d(1, dim, kernel_size=group_size, padding=group_size // 2)
+
+        # Q: project F_rgb's feat_dim channels to attention dim
+        self.q_proj = nn.Conv2d(feat_dim, dim, kernel_size=1)
+
+        # cross-attention head
+        self.cross_attn = nn.MultiheadAttention(dim, n_heads, batch_first=True, dropout=0.0)
+
+        # output projection back to feat_dim (zero-init: ΔF starts at 0)
+        self.out_proj = nn.Conv2d(dim, feat_dim, kernel_size=1, bias=True)
+        nn.init.zeros_(self.out_proj.weight)
+        nn.init.zeros_(self.out_proj.bias)
+
+    def forward(self, ms, f_rgb):
+        """
+        ms: (B, n_bands, H, W) - MS at original input resolution
+        f_rgb: (B, feat_dim, H/stride, W/stride) - RGB features
+        returns: (B, feat_dim, H/stride, W/stride) - ΔF_spec
+        """
+        assert f_rgb is not None, "CrossAttention adapter requires f_rgb"
+        B = ms.shape[0]
+        ms_small = self.spatial_down(ms)             # (B, 31, h, w)
+        _, _, h, w = ms_small.shape
+        assert f_rgb.shape[-2:] == (h, w), (
+            f"f_rgb spatial {tuple(f_rgb.shape[-2:])} != ms_small {(h, w)}"
+        )
+        N = B * h * w
+        # K, V: build per-pixel band tokens
+        bands_flat = ms_small.permute(0, 2, 3, 1).reshape(N, 1, self.n_bands)
+        kv = self.gse(bands_flat).transpose(1, 2)    # (N, 31, dim)
+        # Q: one query per pixel from F_rgb
+        q = self.q_proj(f_rgb).permute(0, 2, 3, 1).reshape(N, 1, self.dim)
+        # cross-attention
+        attended, _ = self.cross_attn(q, kv, kv)     # (N, 1, dim)
+        # back to spatial map
+        attended = attended.view(B, h, w, self.dim).permute(0, 3, 1, 2).contiguous()
+        return self.out_proj(attended)               # (B, feat_dim, h, w)
 
 
 class GatedFusion(nn.Module):
@@ -176,10 +244,10 @@ class GatedFusion(nn.Module):
         if isinstance(ms, (list, tuple)):
             assert isinstance(F_rgb, tuple) and len(F_rgb) == len(ms), \
                 "ms must be a sequence with same length as the base's tuple output"
-            # apply adapter to EACH frame; addition is per-frame to its matching F_rgb
-            return tuple(f + self.gamma * self.adapter(m) for f, m in zip(F_rgb, ms))
+            # apply adapter to EACH frame; pass each frame's F_rgb as well (used by cross-attn)
+            return tuple(f + self.gamma * self.adapter(m, f) for f, m in zip(F_rgb, ms))
 
-        dF = self.adapter(ms)
+        dF = self.adapter(ms, F_rgb)
         if isinstance(F_rgb, tuple):
             # shouldn't normally happen (single rgb -> tuple) but guard anyway
             return tuple(f + self.gamma * dF for f in F_rgb)

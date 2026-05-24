@@ -31,7 +31,7 @@ from MFTIQ.point_tracking import convert_to_point_tracking
 import MFTIQ.utils.io as io_utils
 
 from architecture import model_generator as mst_model_generator
-from spectral_adapter import FeatureLevelSpectralAdapter, GatedFusion
+from spectral_adapter import FeatureLevelSpectralAdapter, CrossAttentionSpectralAdapter, GatedFusion
 
 
 STIR_ROOT = r"c:/Users/29421/Desktop/TissueTracking/STIRChallenge_2024"
@@ -121,7 +121,7 @@ def make_ms_callable(mst):
     return _fn
 
 
-def build_tracker_with_adapter(ckpt_path):
+def build_tracker_with_adapter(ckpt_path, adapter_type="self_attn"):
     """Build a fresh MFTIQ tracker, wrap fnet with GatedFusion containing the
     trained adapter. Returns the tracker (ready for MFTIQ.track API)."""
     mst = mst_model_generator("mst_plus_plus", MST_WEIGHTS).cuda().eval()
@@ -133,8 +133,14 @@ def build_tracker_with_adapter(ckpt_path):
     tracker = cfg.tracker_class(cfg)
     raft = tracker.flower.model
     orig_fnet = raft.fnet
-    adapter = FeatureLevelSpectralAdapter(n_bands=31, trunk_dim=32, n_layers=3,
-                                          feat_dim=256, stride=8).cuda().eval()
+    if adapter_type == "self_attn":
+        adapter = FeatureLevelSpectralAdapter(n_bands=31, trunk_dim=32, n_layers=3,
+                                              feat_dim=256, stride=8).cuda().eval()
+    elif adapter_type == "cross_attn":
+        adapter = CrossAttentionSpectralAdapter(n_bands=31, dim=64, n_heads=4,
+                                                feat_dim=256, stride=8).cuda().eval()
+    else:
+        raise ValueError(f"unknown adapter_type: {adapter_type}")
     gated = GatedFusion(orig_fnet, adapter, gamma_init=1.0,
                         ms_from_rgb=ms_fn, rgb_input_normalized=True).cuda().eval()
 
@@ -175,14 +181,16 @@ def main():
                         help="output filename prefix")
     parser.add_argument("--max_seqs", type=int, default=0,
                         help="evaluate only first N seqs (0 = all)")
+    parser.add_argument("--adapter_type", type=str, default="self_attn",
+                        choices=["self_attn", "cross_attn"])
     args = parser.parse_args()
 
     ckpt_path = None if args.ckpt.lower() == "none" else args.ckpt
     out_dir = Path(r"c:/Users/29421/Desktop/TissueTracking/mst_stir_out/zero_shot_eval")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"== building tracker with adapter (ckpt={ckpt_path}) ==")
-    tracker, mst = build_tracker_with_adapter(ckpt_path)
+    print(f"== building tracker with adapter ({args.adapter_type}, ckpt={ckpt_path}) ==")
+    tracker, mst = build_tracker_with_adapter(ckpt_path, adapter_type=args.adapter_type)
 
     seqs = discover_seqs()
     if args.max_seqs > 0:

@@ -30,7 +30,7 @@ from torch.utils.data import DataLoader
 
 from MFTIQ.config import load_config
 from architecture import model_generator as mst_model_generator
-from spectral_adapter import FeatureLevelSpectralAdapter, GatedFusion
+from spectral_adapter import FeatureLevelSpectralAdapter, CrossAttentionSpectralAdapter, GatedFusion
 from surgt_dataset import SurgTPairDataset
 
 MST_WEIGHTS = r"c:/Users/29421/Desktop/TissueTracking/MST-plus-plus-master/MST-plus-plus-master/predict_code/model_zoo/mst_plus_plus.pth"
@@ -70,7 +70,7 @@ def edge_aware_smoothness(flow, image):
     return (dx_f * torch.exp(-dx_i)).mean() + (dy_f * torch.exp(-dy_i)).mean()
 
 
-def build_models():
+def build_models(adapter_type="self_attn"):
     mst = mst_model_generator("mst_plus_plus", MST_WEIGHTS).cuda().eval()
     for p in mst.parameters():
         p.requires_grad_(False)
@@ -83,14 +83,24 @@ def build_models():
     for p in raft.parameters():
         p.requires_grad_(False)
 
-    adapter = FeatureLevelSpectralAdapter(n_bands=31, trunk_dim=32, n_layers=3,
-                                          feat_dim=256, stride=8).cuda()
+    if adapter_type == "self_attn":
+        adapter = FeatureLevelSpectralAdapter(n_bands=31, trunk_dim=32, n_layers=3,
+                                              feat_dim=256, stride=8).cuda()
+    elif adapter_type == "cross_attn":
+        adapter = CrossAttentionSpectralAdapter(n_bands=31, dim=64, n_heads=4,
+                                                feat_dim=256, stride=8).cuda()
+    else:
+        raise ValueError(f"unknown adapter_type: {adapter_type}")
     gated = GatedFusion(orig_fnet, adapter, gamma_init=1.0,
                         ms_from_rgb=ms_fn, rgb_input_normalized=True).cuda()
-    # tiny non-zero init so all params receive gradient from step 1
+    # tiny non-zero init on the final 1x1 conv so all params receive gradient from step 1
     with torch.no_grad():
-        nn.init.normal_(adapter.proj.weight, std=1e-4)
-        nn.init.normal_(adapter.proj.bias, std=1e-4)
+        if adapter_type == "self_attn":
+            nn.init.normal_(adapter.proj.weight, std=1e-4)
+            nn.init.normal_(adapter.proj.bias, std=1e-4)
+        elif adapter_type == "cross_attn":
+            nn.init.normal_(adapter.out_proj.weight, std=1e-4)
+            nn.init.normal_(adapter.out_proj.bias, std=1e-4)
     raft.fnet = gated
 
     # bypass flag for teacher
@@ -127,6 +137,9 @@ def main():
     parser.add_argument("--tag", type=str, default="v1")
     parser.add_argument("--scale", type=float, default=0.5,
                         help="frame spatial scale (0.5=half, 1.0=full res 1280x1024)")
+    parser.add_argument("--adapter_type", type=str, default="self_attn",
+                        choices=["self_attn", "cross_attn"],
+                        help="adapter architecture: self_attn (SpectralFormer-style) or cross_attn (RGB queries MS)")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -136,8 +149,8 @@ def main():
     log_path = CKPT_DIR / f"train_{args.tag}.log.jsonl"
     summary_path = CKPT_DIR / f"train_{args.tag}.summary.json"
 
-    print(f"[setup] building models ...")
-    tracker, raft, gated, mst = build_models()
+    print(f"[setup] building models ({args.adapter_type}) ...")
+    tracker, raft, gated, mst = build_models(adapter_type=args.adapter_type)
     n_train = sum(p.numel() for p in gated.adapter.parameters()) + 1
     print(f"[setup] trainable params: {n_train / 1e6:.3f} M (adapter + γ)")
 
