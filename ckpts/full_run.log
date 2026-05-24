@@ -1,0 +1,28 @@
+[setup] building models ...
+load model from c:/Users/29421/Desktop/TissueTracking/MST-plus-plus-master/MST-plus-plus-master/predict_code/model_zoo/mst_plus_plus.pth
+Using cache found in C:\Users\29421/.cache\torch\hub\pytorch_vision_main
+Using cache found in C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main
+C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\swiglu_ffn.py:45: UserWarning: xFormers is disabled (SwiGLU)
+  warnings.warn("xFormers is disabled (SwiGLU)")
+C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\swiglu_ffn.py:51: UserWarning: xFormers is not available (SwiGLU)
+  warnings.warn("xFormers is not available (SwiGLU)")
+C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\attention.py:29: UserWarning: xFormers is disabled (Attention)
+  warnings.warn("xFormers is disabled (Attention)")
+C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\attention.py:33: UserWarning: xFormers is not available (Attention)
+  warnings.warn("xFormers is not available (Attention)")
+C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\block.py:35: UserWarning: xFormers is disabled (Block)
+  warnings.warn("xFormers is disabled (Block)")
+C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\block.py:40: UserWarning: xFormers is not available (Block)
+  warnings.warn("xFormers is not available (Block)")
+[setup] trainable params: 0.035 M (adapter + ¦Ã)
+[SurgTPairDataset] skipped 18 clips not at (1280, 2048)
+[setup] dataset: 89294 frame pairs from 50 clips
+C:\Users\29421\miniforge3\Lib\site-packages\MFTIQ\RAFT\core\raft_orig.py:133: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=self.args.mixed_precision):
+C:\Users\29421\miniforge3\Lib\site-packages\MFTIQ\RAFT\core\raft_orig.py:145: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=self.args.mixed_precision):
+C:\Users\29421\miniforge3\Lib\site-packages\MFTIQ\RAFT\core\raft_orig.py:180: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=self.args.mixed_precision):
+[    0/8000]  photo=0.0348  smooth=0.0942  distill=0.00528  total=0.0443  ¦Ã=1.0001  19.29s/step  ETA 2572min
+[   50/8000]  photo=0.0121  smooth=0.0380  distill=0.42693  total=0.0202  ¦Ã=1.0012  31.29s/step  ETA 4146min
+[  100/8000]  photo=0.0078  smooth=0.0229  distill=0.21076  total=0.0122  ¦Ã=1.0015  25.20s/step  ETA 3318min
