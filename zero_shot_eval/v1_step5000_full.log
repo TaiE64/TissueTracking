@@ -1,33 +1,0 @@
-== building tracker with adapter (ckpt=c:/Users/29421/Desktop/TissueTracking/mst_stir_out/ckpts/v1_step005000.pt) ==
-load model from c:/Users/29421/Desktop/TissueTracking/MST-plus-plus-master/MST-plus-plus-master/predict_code/model_zoo/mst_plus_plus.pth
-Using cache found in C:\Users\29421/.cache\torch\hub\pytorch_vision_main
-Using cache found in C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main
-C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\swiglu_ffn.py:45: UserWarning: xFormers is disabled (SwiGLU)
-  warnings.warn("xFormers is disabled (SwiGLU)")
-C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\swiglu_ffn.py:51: UserWarning: xFormers is not available (SwiGLU)
-  warnings.warn("xFormers is not available (SwiGLU)")
-C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\attention.py:29: UserWarning: xFormers is disabled (Attention)
-  warnings.warn("xFormers is disabled (Attention)")
-C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\attention.py:33: UserWarning: xFormers is not available (Attention)
-  warnings.warn("xFormers is not available (Attention)")
-C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\block.py:35: UserWarning: xFormers is disabled (Block)
-  warnings.warn("xFormers is disabled (Block)")
-C:\Users\29421/.cache\torch\hub\facebookresearch_dinov2_main\dinov2\layers\block.py:40: UserWarning: xFormers is not available (Block)
-  warnings.warn("xFormers is not available (Block)")
-  loaded ckpt step=5000, ¦Ã=0.9932
-== evaluating on 25 sampled STIR seqs ==
-  0%|          | 0/25 [00:00<?, ?it/s]C:\Users\29421\miniforge3\Lib\site-packages\MFTIQ\RAFT\core\raft_orig.py:133: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
-  with autocast(enabled=self.args.mixed_precision):
-C:\Users\29421\miniforge3\Lib\site-packages\MFTIQ\RAFT\core\raft_orig.py:145: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
-  with autocast(enabled=self.args.mixed_precision):
-C:\Users\29421\miniforge3\Lib\site-packages\MFTIQ\RAFT\core\raft_orig.py:180: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
-  with autocast(enabled=self.args.mixed_precision):
-C:\Users\29421\miniforge3\Lib\site-packages\MFTIQ\config.py:24: ConfigMissingWarning: Value 'out_occlusion_threshold' not specified in config.
-  warnings.warn(f"Value '{name}' not specified in config.", category=ConfigMissingWarning)
-  [1/25] 02_left_seq08: dists=[16.7]
-  4%|¨…         | 1/25 [04:57<1:58:50, 297.09s/it]  [2/25] 02_right_seq11: dists=[333.8, 7.7, 5.3, 7.5, 24.9, 1.2, 8.0, 1.9, 15.2]
-  8%|¨‚         | 2/25 [08:48<1:39:04, 258.45s/it]  [3/25] 02_right_seq20: dists=[299.0, 7.2, 81.5, 3.3, 292.8, 8.2, 3.3, 3.5]
- 12%|¨€¨‡        | 3/25 [11:52<1:22:22, 224.68s/it]  [4/25] 03_left_seq00: dists=[11.5]
- 16%|¨€¨„        | 4/25 [13:33<1:01:32, 175.81s/it]  [5/25] 03_right_seq00: dists=[11.3, 2.2, 0.6, 807.4, 292.2, 26.2, 30.4]
- 20%|¨€¨€        | 5/25 [15:14<49:37, 148.86s/it]    [6/25] 03_right_seq02: dists=[6.9, 8.9, 9.5, 12.2, 12.9]
- 24%|¨€¨€¨…       | 6/25 [20:04<1:02:14, 196.55s/it]

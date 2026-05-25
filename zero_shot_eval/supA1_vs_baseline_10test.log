@@ -1,0 +1,103 @@
+[setup] building tracker with cross_attn adapter ...
+load model from c:/Users/29421/Desktop/TissueTracking/MST-plus-plus-master/MST-plus-plus-master/predict_code/model_zoo/mst_plus_plus.pth
+  loaded ckpt step=76, ¦Ã=1.0001
+[split] skipped 4 seq(s) with > 600 frames:
+        06_left_seq41  (660 frames)
+        06_right_seq41  (660 frames)
+        11_left_seq09  (2006 frames)
+        11_right_seq09  (2006 frames)
+[setup] eval on 10 TEST seqs (subset of the 25 reserved)
+[setup] trained ¦Ã = 1.0001
+
+== baseline (¦Ã=0) ==
+    val [1/10] 02_left_seq08                  frames=177 n_pts= 1 median= 15.89px  32.7s
+    val [2/10] 02_right_seq11                 frames=143 n_pts= 9 median=  7.93px  25.8s
+    val [3/10] 02_right_seq20                 frames=116 n_pts= 8 median=  9.44px  21.2s
+    val [4/10] 03_left_seq00                  frames= 68 n_pts= 1 median=  9.78px  13.1s
+    val [5/10] 03_right_seq00                 frames= 68 n_pts= 7 median=  6.90px  12.8s
+    val [6/10] 03_right_seq02                 frames=175 n_pts= 5 median= 14.09px  32.8s
+    val [7/10] 04_left_seq10                  frames=553 n_pts= 5 median= 20.43px  104.7s
+    val [8/10] 04_right_seq07                 frames=363 n_pts=37 median=152.42px  69.0s
+    val [9/10] 04_right_seq10                 frames=553 n_pts=17 median=205.67px  103.8s
+    val [10/10] 05_left_seq15                  frames=146 n_pts=11 median= 95.82px  27.7s
+  pooled 101 pts:  median=89.31px  acc@[4, 8, 16, 32, 64]=[0.079, 0.208, 0.317, 0.366, 0.416]  avg=0.2772
+
+== trained adapter (¦Ã=1.0001) ==
+    val [1/10] 02_left_seq08                  frames=177 n_pts= 1 median= 15.64px  33.3s
+    val [2/10] 02_right_seq11                 frames=143 n_pts= 9 median=  7.89px  26.0s
+    val [3/10] 02_right_seq20                 frames=116 n_pts= 8 median=  9.44px  21.1s
+    val [4/10] 03_left_seq00                  frames= 68 n_pts= 1 median=  9.83px  12.3s
+    val [5/10] 03_right_seq00                 frames= 68 n_pts= 7 median=  6.93px  12.3s
+    val [6/10] 03_right_seq02                 frames=175 n_pts= 5 median= 13.90px  31.9s
+    val [7/10] 04_left_seq10                  frames=553 n_pts= 5 median= 19.88px  99.5s
+    val [8/10] 04_right_seq07                 frames=363 n_pts=37 median=152.28px  68.2s
+    val [9/10] 04_right_seq10                 frames=553 n_pts=17 median=204.23px  102.7s
+    val [10/10] 05_left_seq15                  frames=146 n_pts=11 median= 94.82px  27.0s
+  pooled 101 pts:  median=87.36px  acc@[4, 8, 16, 32, 64]=[0.089, 0.208, 0.317, 0.366, 0.426]  avg=0.2812
+
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+FINAL COMPARISON (5 val seqs, chained RAFT eval):
+method                          n_pts   median   acc@4   acc@8  acc@16  acc@32  acc@64       avg
+baseline (¦Ã=0, RGB-only)          101    89.31   0.079   0.208   0.317   0.366   0.416    0.2772
+trained adapter (supA1)           101    87.36   0.089   0.208   0.317   0.366   0.426    0.2812
+
+¦¤ avg acc = +0.0040  (adapter better)
